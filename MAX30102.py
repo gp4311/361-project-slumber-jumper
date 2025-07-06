@@ -1,6 +1,7 @@
 import max30102
 import hrcalc
 import time
+# MAX30102 code 
 
 # Set abnormal threshold values
 hr_high = 160
