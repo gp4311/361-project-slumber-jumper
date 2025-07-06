@@ -42,6 +42,11 @@ while True:
     temp_sum = 0
     interval_len = 60   # in seconds - change during testing
 
+    #   Set temperature thresholds
+    cold_bound = 36.5
+    hot_bound = 37.2
+    very_hot_bound = 38.9
+
     #   Frequency of readings: 1 second
     #   Frequency of messaging: 1 minute (average of 60 temp readings)
     for i in range(interval_len):
@@ -52,15 +57,15 @@ while True:
         time.sleep(1)
 
     avg_temp = temp_sum / interval_len
-    print(f'Temperature: {avg_temp:.2f} °C')
+    print(f'Temperature: {avg_temp:.2f}°C')
 
     #   Send alert if abnormal temperature reading
-    if avg_temp <= 36.5:
-        print("COLD WARNING: Infant’s temperature is below normal. Current temperature is below 36.5°C. Please ensure the infant is warm and check for any signs of discomfort or illness.")
-    elif avg_temp >= 38.9:
-        print("CRITICAL OVERHEAT ALERT: Current temperature is above 38.9°C. Take immediate action and consult a healthcare professional.")
-    elif avg_temp >= 37.2:
-        print("OVERHEAT ALERT: Infant’s temperature is above normal. Current temperature is above 37.2°C. Monitor infant closely - consider removing extra clothing or blankets.")
+    if avg_temp <= cold_bound:
+        print(f'COLD WARNING: Infant’s temperature is below normal. Current temperature is below {cold_bound}°C. Please ensure the infant is warm and check for any signs of discomfort or illness.')
+    elif avg_temp >= very_hot_bound:
+        print(f'CRITICAL OVERHEAT ALERT: Current temperature is above {very_hot_bound}°C. Take immediate action and consult a healthcare professional.')
+    elif avg_temp >= hot_bound:
+        print(f'OVERHEAT ALERT: Infant’s temperature is above normal. Current temperature is above {hot_bound:.2f}°C. Monitor infant closely - consider removing extra clothing or blankets.')
 
     print('')
 
