@@ -7,7 +7,7 @@
 | VCC     | 3.3V            |
 | GND     | GND             |
 
-## Spftware Setup Instructions
+## Software Setup Instructions
 
 ### Enable 1-Wire
 

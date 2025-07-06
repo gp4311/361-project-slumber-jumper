@@ -39,23 +39,31 @@ def read_temp():
 
 #   Call functions and print temperature reading
 while True:
-    temperature_celsius = read_temp()
-    print(f'Temperature: {temperature_celsius:.2f} °C')
+    temp_sum = 0
+    interval_len = 60   # in seconds - change during testing
+
+    #   Frequency of readings: 1 second
+    #   Frequency of messaging: 1 minute (average of 60 temp readings)
+    for i in range(interval_len):
+        temperature_celsius = read_temp()
+        temp_sum += temperature_celsius
+
+        #   Delay between each temperature reading
+        time.sleep(1)
+
+    avg_temp = temp_sum / interval_len
+    print(f'Temperature: {avg_temp:.2f} °C')
 
     #   Send alert if abnormal temperature reading
-    if temperature_celsius <= 36.5:
+    if avg_temp <= 36.5:
         print("COLD WARNING: Infant’s temperature is below normal. Current temperature is below 36.5°C. Please ensure the infant is warm and check for any signs of discomfort or illness.")
-    elif temperature_celsius >= 38.9:
+    elif avg_temp >= 38.9:
         print("CRITICAL OVERHEAT ALERT: Current temperature is above 38.9°C. Take immediate action and consult a healthcare professional.")
-    elif temperature_celsius >= 37.2:
+    elif avg_temp >= 37.2:
         print("OVERHEAT ALERT: Infant’s temperature is above normal. Current temperature is above 37.2°C. Monitor infant closely - consider removing extra clothing or blankets.")
 
     print('')
 
-    #   Delay between each temperature reading
-    time.sleep(1)
-
     #   TO DO:
-    #   - determine frequency of messaging (1 minute?),
-    #   - take average of 60 temperature readings (frequency: 1 second?),
-    #   - save data to file
+    #   - save data to file (need to determine if storing every reading or just alarms?)
+    #   - sending notifications to BLE
