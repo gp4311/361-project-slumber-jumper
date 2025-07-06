@@ -1,5 +1,3 @@
-# -*-coding:utf-8
-
 import numpy as np
 
 # 25 samples per second (in algorithm.h)

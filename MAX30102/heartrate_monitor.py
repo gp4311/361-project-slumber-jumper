@@ -1,10 +1,8 @@
-
 from max30102 import MAX30102
 import hrcalc
 import threading
 import time
 import numpy as np
-
 
 class HeartRateMonitor(object):
     """
