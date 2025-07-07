@@ -4,6 +4,7 @@ import dbus.service
 from gi.repository import GLib
 import time
 import threading
+import json
 
 BLUEZ_SERVICE_NAME = 'org.bluez'
 ADAPTER_IFACE = 'org.bluez.Adapter1'
@@ -144,15 +145,23 @@ class Characteristic(dbus.service.Object):
         pass
 
 
-def send_periodic(characteristic):
+def send_from_queue(queue, characteristic):
     while True:
-        msg = f"Hello at {time.strftime('%H:%M:%S')}"
-        print("Sending:", msg)
-        characteristic.send_notification(msg)
-        time.sleep(5)
+        if not queue.empty():
+            msg = queue.get()
+
+            # Convert dict to JSON string
+            try:
+                json_msg = json.dumps(msg)
+                print("BLE Sending:", json_msg)
+                characteristic.send_notification(json_msg)
+            except Exception as e:
+                print("Error sending BLE message:", e)
+
+        time.sleep(1)  # Slight delay to prevent busy looping
 
 
-def main():
+def main(queue):
     global mainloop
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
     bus = dbus.SystemBus()
@@ -180,11 +189,9 @@ def main():
         reply_handler=lambda: print("Advertisement registered"),
         error_handler=lambda e: print("Failed to register advertisement:", e))
 
-    # Start sending notifications
-    threading.Thread(target=send_periodic, args=(char,), daemon=True).start()
+    # Start queue-based BLE notifications
+    threading.Thread(target=send_from_queue, args=(queue, char), daemon=True).start()
+
+    # Run BLE event loop
     mainloop = GLib.MainLoop()
     mainloop.run()
-
-
-if __name__ == '__main__':
-    main()
