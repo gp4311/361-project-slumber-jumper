@@ -2,6 +2,11 @@ import os
 import glob
 import time
 
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
+
+from logger import CSVLogger 
+
 # Load kernel modules to interface with sensor
 os.system('modprobe w1-gpio')
 os.system('modprobe w1-therm')
@@ -38,13 +43,15 @@ def read_temp():
 
 # Main function to be called by main.py
 
-def collect_temperature_data(queue=None, verbose=False, logger=None):
+def collect_temperature_data(queue=None, verbose=False):
     interval_len = 60
 
     # Set temperature thresholds
     cold_bound = 36.5
     hot_bound = 37.2
     very_hot_bound = 38.9
+
+    logger = CSVLogger(log_dir='logs', field_name='Temperature (°C)')
 
     try:
         while True:
@@ -93,13 +100,10 @@ def collect_temperature_data(queue=None, verbose=False, logger=None):
                 queue.put(message)
     
     finally:
-        if logger:
-            logger.close()
+        logger.close()
 
 
 # Test function for unit testing
 
 if __name__ == "__main__":
     collect_temperature_data(verbose=True)
-
-# TO DO: Log all outputs to a .txt file 
