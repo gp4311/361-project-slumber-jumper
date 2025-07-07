@@ -60,7 +60,7 @@ def collect_temperature_data(queue):
             # Delay between each temperature reading
             time.sleep(1)
         
-        avg_temp = temp_sum / interval_len
+        avg_temp = round(temp_sum / interval_len, 2)
         
         alert = None
 
@@ -75,7 +75,7 @@ def collect_temperature_data(queue):
         # Send to BLE queue
         message = {
             'sensor': 'temperature',
-            'value': round(avg_temp, 2),
+            'value': avg_temp,
             'alert': alert
         }
         queue.put(message)
