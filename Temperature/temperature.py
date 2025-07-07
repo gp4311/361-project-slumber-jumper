@@ -79,5 +79,36 @@ def collect_temperature_data(queue):
             'alert': alert
         }
         queue.put(message)
-    
+
+
+# Test function for unit testing
+
+if __name__ == "__main__":
+    interval_len = 60
+
+    cold_bound = 36.5
+    hot_bound = 37.2
+    very_hot_bound = 38.9
+
+    while True:
+        temp_sum = 0
+
+        for _ in range(interval_len):
+            temperature_celsius = read_temp()
+            temp_sum += temperature_celsius
+            time.sleep(1)
+
+        avg_temp = temp_sum / interval_len
+
+        print(f"Temperature: {avg_temp:.2f}°C")
+
+        if avg_temp <= cold_bound:
+            print(f'COLD WARNING: Temp {avg_temp:.2f}°C < {cold_bound}°C')
+        elif avg_temp >= very_hot_bound:
+            print(f'CRITICAL OVERHEAT ALERT: Temp {avg_temp:.2f}°C > {very_hot_bound}°C')
+        elif avg_temp >= hot_bound:
+            print(f'OVERHEAT ALERT: Temp {avg_temp:.2f}°C > {hot_bound}°C')
+
+        print("")
+
 # TO DO: Log all outputs to a .txt file 
