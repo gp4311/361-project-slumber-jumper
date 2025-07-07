@@ -2,6 +2,7 @@ from smbus2 import SMBus, i2c_msg
 import time
 import math
 
+
 # MPU-9250 I2C address
 MPU_ADDR = 0x68
 
@@ -20,6 +21,11 @@ i2c.i2c_rdwr(write)
 # Global offsets
 accel_offset = [0.0, 0.0, 0.0]
 gyro_offset = [0.0, 0.0, 0.0]
+
+# Thresholds
+GYRO_THRESHOLD = 2          # deg/s
+TILT_ANGLE_THRESHOLD = 10   # deg
+
 
 # Helper to read 16-bit signed value from register
 def read_word_2c(reg):
@@ -111,41 +117,63 @@ def get_pitch_roll_angles():
     roll = math.degrees(math.atan2(ay, az))
     return pitch, roll
 
-def check_y_tilt_and_gyro(initial_y_tilt):
-    accel = read_calibrated_accel()
-    gyro = read_calibrated_gyro()
-    _, ay, az = accel
-    gx, _, _ = gyro
 
-    current_y_tilt = math.degrees(math.atan2(ay, az))
-    tilt_change = abs(current_y_tilt - initial_y_tilt)
+# Main function to be called by main.py
 
-    pitch, roll = get_pitch_roll_angles()
+def collect_gyro_data(queue=None, verbose=False):
+    calibrate_accelerometer()
+    gyro_calibration()
+    initial_y_tilt = get_y_tilt_angle()
 
-    print(f"Current tilt Y: {current_y_tilt:.2f}°, Initial: {initial_y_tilt:.2f}°, Δ: {tilt_change:.2f}°")
+    if verbose:
+        print("\nMonitoring tilt and roll...\n")
 
-    print(f"Pitch: {pitch:.2f}°, Roll: {roll:.2f}°, Y-Tilt Δ: {tilt_change:.2f}°")
+    while True:
+        accel = read_calibrated_accel()
+        gyro = read_calibrated_gyro()
+        _, ay, az = accel
+        gx, _, _ = gyro
 
-    if tilt_change > TILT_ANGLE_THRESHOLD:
-        print("Y Tilt Warning: ΔY tilt = {:.2f}°".format(tilt_change))
+        current_y_tilt = math.degrees(math.atan2(ay, az))
+        tilt_change = abs(current_y_tilt - initial_y_tilt)
 
-    if abs(gx) > GYRO_THRESHOLD:
-        print("Rolling Detected: gx = {:.2f}°/s".format(gx))
+        pitch, roll = get_pitch_roll_angles()
 
+        if verbose:
+            print(f"Current tilt Y: {current_y_tilt:.2f}°, Initial: {initial_y_tilt:.2f}°, Δ: {tilt_change:.2f}°")
+            print(f"Pitch: {pitch:.2f}°, Roll: {roll:.2f}°, Y-Tilt Δ: {tilt_change:.2f}°")
 
-# Thresholds
-GYRO_THRESHOLD = 2          # deg/s
-TILT_ANGLE_THRESHOLD = 10   # deg
+        alert = None
+        if tilt_change > TILT_ANGLE_THRESHOLD:
+            alert = f"Y Tilt Warning: ΔY tilt = {tilt_change:.2f}°"
+            if verbose:
+                print(alert)
 
-# === Start Calibrations ===
-calibrate_accelerometer()
-gyro_calibration()
-initial_y_tilt = get_y_tilt_angle()
+        if abs(gx) > GYRO_THRESHOLD:
+            gyro_alert = f"Rolling Detected: gx = {gx:.2f}°/s"
+            if verbose:
+                print(gyro_alert)
+            # Combine alerts if needed
+            alert = (alert + "; " + gyro_alert) if alert else gyro_alert
 
-print("\nMonitoring tilt and roll...\n")
+        if alert and queue:
+            message = {
+                'sensor': 'gyroscope',
+                'value': {
+                    'tilt_y': round(current_y_tilt, 2),
+                    'gx': round(gx, 2),
+                    'pitch': round(pitch, 2),
+                    'roll': round(roll, 2)
+                },
+                'alert': alert
+            }
+            queue.put(message)
 
-while True:
-    check_y_tilt_and_gyro(initial_y_tilt)
-    time.sleep(0.1)
+        time.sleep(0.1)
+
+# Test function for unit testing
+
+if __name__ == "__main__":
+    collect_gyro_data(verbose=True)
 
 

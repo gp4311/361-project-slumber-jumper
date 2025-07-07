@@ -75,7 +75,7 @@ def collect_temperature_data(queue):
         # Send to BLE queue
         message = {
             'sensor': 'temperature',
-            'value': avg_temp,
+            'value': round(avg_temp, 2),
             'alert': alert
         }
         queue.put(message)
