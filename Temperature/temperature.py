@@ -10,15 +10,23 @@ os.system('modprobe w1-therm')
 
 # Set up paths and filenames for reading temp data
 base_dir = '/sys/bus/w1/devices/'
-# Search for folder that starts with "28"
+# Search for folders that starts with "28"
 device_folder = glob.glob(base_dir + '28*')[0]
-# File containing raw temperature data
+device_folder2 = glob.glob(base_dir + '28*')[1]
+# Files containing raw temperature data
 device_file = device_folder + '/w1_slave'
+device_file2 = device_folder2 + '/w1_slave'
 
 
 # Get temp readings from file and return list
 def read_temp_raw():
     f = open(device_file, 'r')
+    lines = f.readlines()
+    f.close()
+    return lines
+
+def read_temp_raw2():
+    f = open(device_file2, 'r')
     lines = f.readlines()
     f.close()
     return lines
@@ -31,6 +39,18 @@ def read_temp():
     while lines[0].strip()[-3:] != 'YES':
         time.sleep(0.2)
         lines = read_temp_raw()
+    equals_pos = lines[1].find('t=')
+    if equals_pos != -1:
+        temp_string = lines[1][equals_pos + 2:]
+        temp_c = float(temp_string) / 1000.0
+        return temp_c
+
+def read_temp2():
+    lines = read_temp_raw2()
+    # Check for valid data
+    while lines[0].strip()[-3:] != 'YES':
+        time.sleep(0.2)
+        lines = read_temp_raw2()
     equals_pos = lines[1].find('t=')
     if equals_pos != -1:
         temp_string = lines[1][equals_pos + 2:]
@@ -52,15 +72,17 @@ def collect_temperature_data(queue):
         temp_sum = 0
 
         # Frequency of readings: 1 second
-        # Frequency of messaging: 1 minute (average of 60 temp readings)
+        # Frequency of messaging: 1 minute
+        # Take 1-minute average (60 temp readings) of two temperature sensors
         for i in range(interval_len):
             temperature_celsius = read_temp()
-            temp_sum += temperature_celsius
+            temperature_celsius2 = read_temp2()
+            temp_sum += temperature_celsius + temperature_celsius2
 
             # Delay between each temperature reading
             time.sleep(1)
         
-        avg_temp = round(temp_sum / interval_len, 2)
+        avg_temp = round(temp_sum / (interval_len * 2), 2)
         
         alert = None
 
