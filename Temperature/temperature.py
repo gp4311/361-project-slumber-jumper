@@ -10,7 +10,7 @@ os.system('modprobe w1-therm')
 
 # Set up paths and filenames for reading temp data
 base_dir = '/sys/bus/w1/devices/'
-# Search for folders that starts with "28"
+# Search for folders that start with "28"
 device_folder = glob.glob(base_dir + '28*')[0]
 device_folder2 = glob.glob(base_dir + '28*')[1]
 # Files containing raw temperature data
@@ -64,7 +64,7 @@ def collect_temperature_data(queue):
     interval_len = 60
 
     # Set temperature thresholds
-    cold_bound = 36.5
+    cold_bound = 35
     hot_bound = 37.2
     very_hot_bound = 38.9
 
@@ -86,7 +86,7 @@ def collect_temperature_data(queue):
         
         alert = None
 
-        # Send alert if abnormal temperature reading
+        # Alert if abnormal temperature reading
         if avg_temp <= cold_bound:
             alert = f'COLD WARNING: Temp {avg_temp:.2f}°C < {cold_bound}°C'
         elif avg_temp >= very_hot_bound:
