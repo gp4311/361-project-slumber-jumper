@@ -116,6 +116,8 @@ def get_pitch_angles():
     return pitch
 
 
+
+
 # Main function to be called by main.py
 
 def collect_gyro_data(queue=None, verbose=False):
@@ -141,17 +143,22 @@ def collect_gyro_data(queue=None, verbose=False):
         #     print(f"Current tilt Y: {current_y_tilt:.2f}°, Initial: {initial_y_tilt:.2f}°, Δ: {tilt_change:.2f}°")
 
         alert = None
-        if tilt_change > TILT_ANGLE_THRESHOLD:
+        samples = 100
+        for tilt_change in range(samples):
+            tilt_sum += tilt_change
+        avg_tilt = round(tilt_sum / samples, 2)
+        
+        if avg_tilt > TILT_ANGLE_THRESHOLD:
             alert = f"Y Tilt Warning: Y tilt = {tilt_change:.2f} deg"
             if verbose:
-                print(alert)
+                print(alert)        
 
 
         if alert and queue:
             message = {
                 'sensor': 'gyroscope',
                 'value': {
-                    'tilt_y': round(current_y_tilt, 2),
+                    'tilt_y': round(avg_tilt, 2),
                     'gx': round(gx, 2),
                     'pitch': round(pitch, 2)
                 },
