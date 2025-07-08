@@ -129,14 +129,6 @@ def collect_gyro_data(queue=None, verbose=False):
         print("\nMonitoring tilt...\n")
 
     while True:
-        accel = read_calibrated_accel()
-        gyro = read_calibrated_gyro()
-        _, ay, az = accel
-        gx, _, _ = gyro
-
-        current_y_tilt = math.degrees(math.atan2(ay, az))
-        tilt_change = abs(current_y_tilt - initial_y_tilt)
-
         pitch = get_pitch_angles()
 
         # if verbose:
@@ -144,12 +136,21 @@ def collect_gyro_data(queue=None, verbose=False):
 
         alert = None
         samples = 100
-        for tilt_change in range(samples):
+        tilt_sum = 0 
+        for _ in range(samples):
+            accel = read_calibrated_accel()
+            gyro = read_calibrated_gyro()
+            _, ay, az = accel
+            gx, _, _ = gyro
+
+            current_y_tilt = math.degrees(math.atan2(ay, az))
+            tilt_change = abs(current_y_tilt - initial_y_tilt)
+
             tilt_sum += tilt_change
         avg_tilt = round(tilt_sum / samples, 2)
         
         if avg_tilt > TILT_ANGLE_THRESHOLD:
-            alert = f"Y Tilt Warning: Y tilt = {tilt_change:.2f} deg"
+            alert = f"Y Tilt Warning: Y tilt = {avg_tilt:.2f} deg"
             if verbose:
                 print(alert)        
 
