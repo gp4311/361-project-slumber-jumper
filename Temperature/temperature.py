@@ -4,6 +4,11 @@ import os
 import glob
 import time
 
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
+
+from logger import CSVLogger
+
 # Load kernel modules to interface with sensor
 os.system('modprobe w1-gpio')
 os.system('modprobe w1-therm')
@@ -60,77 +65,68 @@ def read_temp2():
 
 # Main function to be called by main.py
 
-def collect_temperature_data(queue):
+def collect_temperature_data(queue=None, verbose=False):
     interval_len = 60
 
     # Set temperature thresholds
-    cold_bound = 35
+    cold_bound = 35.0
     hot_bound = 37.2
     very_hot_bound = 38.9
 
-    while True:
-        temp_sum = 0
+    logger = CSVLogger(log_dir='logs/Temperature', field_name='Temperature (°C)')
 
-        # Frequency of readings: 1 second
-        # Frequency of messaging: 1 minute
-        # Take 1-minute average (60 temp readings) of two temperature sensors
-        for i in range(interval_len):
-            temperature_celsius = read_temp()
-            temperature_celsius2 = read_temp2()
-            temp_sum += temperature_celsius + temperature_celsius2
+    try:
+        while True:
+            temp_sum = 0
 
-            # Delay between each temperature reading
-            time.sleep(1)
-        
-        avg_temp = round(temp_sum / (interval_len * 2), 2)
-        
-        alert = None
+            # Frequency of readings: 1 second
+            # Frequency of messaging: 1 minute
+            # Take 1-minute average (60 temp readings) of two temperature sensors
+            for i in range(interval_len):
+                temperature_celsius = read_temp()
+                temperature_celsius2 = read_temp2()
+                temp_sum += temperature_celsius + temperature_celsius2
 
-        # Alert if abnormal temperature reading
-        if avg_temp <= cold_bound:
-            alert = f'COLD WARNING: Temp {avg_temp:.2f}°C < {cold_bound}°C'
-        elif avg_temp >= very_hot_bound:
-            alert = f'CRITICAL OVERHEAT ALERT: Temp {avg_temp:.2f}°C > {very_hot_bound}°C'
-        elif avg_temp >= hot_bound:
-            alert = f'OVERHEAT ALERT: Temp {avg_temp:.2f}°C > {hot_bound}°C'
-        
-        # Send to BLE queue
-        message = {
-            'sensor': 'temperature',
-            'value': avg_temp,
-            'alert': alert
-        }
-        queue.put(message)
+                # Delay between each temperature reading
+                time.sleep(1)
+
+            avg_temp = round(temp_sum / (interval_len * 2), 2)
+
+            if verbose:
+                print(f"Temperature: {avg_temp:.2f}°C")
+
+            if logger:
+                logger.log(avg_temp)
+
+            alert = None
+
+            # Alert if abnormal temperature reading
+            if avg_temp <= cold_bound:
+                alert = f'COLD WARNING: Temp {avg_temp:.2f}°C < {cold_bound}°C'
+                if verbose:
+                    print(alert)
+            elif avg_temp >= very_hot_bound:
+                alert = f'CRITICAL OVERHEAT ALERT: Temp {avg_temp:.2f}°C > {very_hot_bound}°C'
+                if verbose:
+                    print(alert)
+            elif avg_temp >= hot_bound:
+                alert = f'OVERHEAT ALERT: Temp {avg_temp:.2f}°C > {hot_bound}°C'
+                if verbose:
+                    print(alert)
+
+            # Send to BLE queue
+            if alert and queue:
+                message = {
+                    'sensor': 'temperature',
+                    'value': avg_temp,
+                    'alert': alert
+                }
+                queue.put(message)
+    finally:
+        logger.close()
 
 
 # Test function for unit testing
 
 if __name__ == "__main__":
-    interval_len = 60
-
-    cold_bound = 36.5
-    hot_bound = 37.2
-    very_hot_bound = 38.9
-
-    while True:
-        temp_sum = 0
-
-        for _ in range(interval_len):
-            temperature_celsius = read_temp()
-            temp_sum += temperature_celsius
-            time.sleep(1)
-
-        avg_temp = temp_sum / interval_len
-
-        print(f"Temperature: {avg_temp:.2f}°C")
-
-        if avg_temp <= cold_bound:
-            print(f'COLD WARNING: Temp {avg_temp:.2f}°C < {cold_bound}°C')
-        elif avg_temp >= very_hot_bound:
-            print(f'CRITICAL OVERHEAT ALERT: Temp {avg_temp:.2f}°C > {very_hot_bound}°C')
-        elif avg_temp >= hot_bound:
-            print(f'OVERHEAT ALERT: Temp {avg_temp:.2f}°C > {hot_bound}°C')
-
-        print("")
-
-# TO DO: Log all outputs to a .txt file 
+    collect_temperature_data(verbose=True)
