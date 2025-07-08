@@ -24,7 +24,7 @@ gyro_offset = [0.0, 0.0, 0.0]
 
 # Thresholds
 GYRO_THRESHOLD = 2          # deg/s
-TILT_ANGLE_THRESHOLD = 10   # deg
+TILT_ANGLE_THRESHOLD = 30   # deg
 
 
 # Helper to read 16-bit signed value from register
@@ -139,9 +139,9 @@ def collect_gyro_data(queue=None, verbose=False):
 
         pitch, roll = get_pitch_roll_angles()
 
-        if verbose:
-            print(f"Current tilt Y: {current_y_tilt:.2f}°, Initial: {initial_y_tilt:.2f}°, Δ: {tilt_change:.2f}°")
-            print(f"Pitch: {pitch:.2f}°, Roll: {roll:.2f}°, Y-Tilt Δ: {tilt_change:.2f}°")
+        # if verbose:
+        #     print(f"Current tilt Y: {current_y_tilt:.2f}°, Initial: {initial_y_tilt:.2f}°, Δ: {tilt_change:.2f}°")
+        #    print(f"Pitch: {pitch:.2f}°, Roll: {roll:.2f}°, Y-Tilt Δ: {tilt_change:.2f}°")
 
         alert = None
         if tilt_change > TILT_ANGLE_THRESHOLD:
