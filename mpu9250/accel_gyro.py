@@ -3,31 +3,29 @@ import time
 import math
 
 
-# MPU-9250 I2C address
+# I2C address
 MPU_ADDR = 0x68
 
-# MPU-9250 Register addresses
+# Addresses
 PWR_MGMT_1   = 0x6B
 ACCEL_XOUT_H = 0x3B
 GYRO_XOUT_H  = 0x43
 
-# I2C setup
-i2c = SMBus(1)  # On Raspberry Pi, I2C bus 1 is used
+i2c = SMBus(1) 
 
 # Wake up MPU-9250
 write = i2c_msg.write(MPU_ADDR, [PWR_MGMT_1, 0x00])
 i2c.i2c_rdwr(write)
 
-# Global offsets
+# Setup values for calibration
 accel_offset = [0.0, 0.0, 0.0]
 gyro_offset = [0.0, 0.0, 0.0]
 
-# Thresholds
-GYRO_THRESHOLD = 2          # deg/s
-TILT_ANGLE_THRESHOLD = 30   # deg
+# deg prior to alert
+TILT_ANGLE_THRESHOLD = 30   
 
 
-# Helper to read 16-bit signed value from register
+# Helper to read 16-bit signed value from register 
 def read_word_2c(reg):
     high = i2c.read_byte_data(MPU_ADDR, reg)
     low = i2c.read_byte_data(MPU_ADDR, reg + 1)
@@ -41,12 +39,12 @@ def read_accel():
     ay = read_word_2c(ACCEL_XOUT_H + 2)
     az = read_word_2c(ACCEL_XOUT_H + 4)
 
-    # Convert raw to g (±2g scale)
+    # Convert +2g scale used for pi zero 
     ax_g = ax / 16384.0
     ay_g = ay / 16384.0
     az_g = az / 16384.0
 
-    # Convert to m/s²
+    # Convert to m/s^2 
     ax_ms2 = ax_g * 9.81
     ay_ms2 = ay_g * 9.81
     az_ms2 = az_g * 9.81
@@ -54,10 +52,11 @@ def read_accel():
     return [ax_ms2, ay_ms2, az_ms2]
 
 def read_gyro():
+    # conevert to degress scale from the scale used by mpu 9250
     gx = read_word_2c(GYRO_XOUT_H)
     gy = read_word_2c(GYRO_XOUT_H + 2)
     gz = read_word_2c(GYRO_XOUT_H + 4)
-    return [gx / 131.0, gy / 131.0, gz / 131.0]  # ±250°/s scale
+    return [gx / 131.0, gy / 131.0, gz / 131.0]  
 
 def calibrate_accelerometer(samples=100):
     global accel_offset
@@ -72,7 +71,7 @@ def calibrate_accelerometer(samples=100):
         time.sleep(0.01)
 
     accel_offset = [acc_sum[i] / samples for i in range(3)]
-    accel_offset[2] -= 9.81  # Remove gravity once
+    accel_offset[2] -= 9.81  # Remove gravity from z direction (downwards)
     print("Accelerometer calibration:", accel_offset)
 
 def gyro_calibration(calibration_time=5):
@@ -94,7 +93,7 @@ def gyro_calibration(calibration_time=5):
             print("Still calibrating Gyro...", num_samples)
 
     if num_samples == 0:
-        raise RuntimeError("Gyro calibration failed: no samples collected.")
+        raise RuntimeError("Calibration failed.")
 
     gyro_offset = [x / num_samples for x in offsets]
     print("Gyroscope calibration complete:", gyro_offset)
@@ -111,11 +110,10 @@ def get_y_tilt_angle():
     _, ay, az = read_calibrated_accel()
     return math.degrees(math.atan2(ay, az))
 
-def get_pitch_roll_angles():
+def get_pitch_angles():
     ax, ay, az = read_calibrated_accel()
     pitch = math.degrees(math.atan2(-ax, math.sqrt(ay * ay + az * az)))
-    roll = math.degrees(math.atan2(ay, az))
-    return pitch, roll
+    return pitch
 
 
 # Main function to be called by main.py
@@ -126,7 +124,7 @@ def collect_gyro_data(queue=None, verbose=False):
     initial_y_tilt = get_y_tilt_angle()
 
     if verbose:
-        print("\nMonitoring tilt and roll...\n")
+        print("\nMonitoring tilt...\n")
 
     while True:
         accel = read_calibrated_accel()
@@ -137,24 +135,17 @@ def collect_gyro_data(queue=None, verbose=False):
         current_y_tilt = math.degrees(math.atan2(ay, az))
         tilt_change = abs(current_y_tilt - initial_y_tilt)
 
-        pitch, roll = get_pitch_roll_angles()
+        pitch = get_pitch_angles()
 
         # if verbose:
         #     print(f"Current tilt Y: {current_y_tilt:.2f}°, Initial: {initial_y_tilt:.2f}°, Δ: {tilt_change:.2f}°")
-        #    print(f"Pitch: {pitch:.2f}°, Roll: {roll:.2f}°, Y-Tilt Δ: {tilt_change:.2f}°")
 
         alert = None
         if tilt_change > TILT_ANGLE_THRESHOLD:
-            alert = f"Y Tilt Warning: ΔY tilt = {tilt_change:.2f}°"
+            alert = f"Y Tilt Warning: Y tilt = {tilt_change:.2f} deg"
             if verbose:
                 print(alert)
 
-        if abs(gx) > GYRO_THRESHOLD:
-            gyro_alert = f"Rolling Detected: gx = {gx:.2f}°/s"
-            if verbose:
-                print(gyro_alert)
-            # Combine alerts if needed
-            alert = (alert + "; " + gyro_alert) if alert else gyro_alert
 
         if alert and queue:
             message = {
@@ -162,8 +153,7 @@ def collect_gyro_data(queue=None, verbose=False):
                 'value': {
                     'tilt_y': round(current_y_tilt, 2),
                     'gx': round(gx, 2),
-                    'pitch': round(pitch, 2),
-                    'roll': round(roll, 2)
+                    'pitch': round(pitch, 2)
                 },
                 'alert': alert
             }
@@ -175,5 +165,3 @@ def collect_gyro_data(queue=None, verbose=False):
 
 if __name__ == "__main__":
     collect_gyro_data(verbose=True)
-
-
