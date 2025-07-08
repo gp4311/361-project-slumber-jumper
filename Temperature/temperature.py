@@ -47,7 +47,7 @@ def collect_temperature_data(queue=None, verbose=False):
     interval_len = 60
 
     # Set temperature thresholds
-    cold_bound = 36.5
+    cold_bound = 35.0
     hot_bound = 37.2
     very_hot_bound = 38.9
 
