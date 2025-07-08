@@ -27,7 +27,7 @@ def collect_hr_spo2_data(queue=None, verbose=False):
     recent_hrs = []
     recent_spo2s = []
 
-    logger = CSVLogger(log_dir='logs', field_name='Value')
+    logger = CSVLogger(log_dir='logs/HR_SpO2', field_name='Value')
 
     try:
 

@@ -51,7 +51,7 @@ def collect_temperature_data(queue=None, verbose=False):
     hot_bound = 37.2
     very_hot_bound = 38.9
 
-    logger = CSVLogger(log_dir='logs', field_name='Temperature (°C)')
+    logger = CSVLogger(log_dir='logs/Temperature', field_name='Temperature (°C)')
 
     try:
         while True:
