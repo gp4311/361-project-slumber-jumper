@@ -1,5 +1,3 @@
-# sensors/Temperature/temperature.py
-
 import os
 import glob
 import time
@@ -122,6 +120,7 @@ def collect_temperature_data(queue=None, verbose=False):
                     'alert': alert
                 }
                 queue.put(message)
+
     finally:
         logger.close()
 
