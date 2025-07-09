@@ -114,8 +114,7 @@ def get_y_tilt_angle():
 def get_pitch_roll_angles():
     ax, ay, az = read_calibrated_accel()
     pitch = math.degrees(math.atan2(-ax, math.sqrt(ay * ay + az * az)))
-    roll = math.degrees(math.atan2(ay, az))
-    return pitch, roll
+    return pitch
 
 
 # Main function to be called by main.py
@@ -128,7 +127,13 @@ def collect_gyro_data(queue=None, verbose=False):
     if verbose:
         print("\nMonitoring tilt and roll...\n")
 
+    over_threshold_count = 0
+    samples = 30
+    tilt_sum = 0
+
     while True:
+        alert = None 
+
         accel = read_calibrated_accel()
         gyro = read_calibrated_gyro()
         _, ay, az = accel
@@ -136,40 +141,32 @@ def collect_gyro_data(queue=None, verbose=False):
 
         current_y_tilt = math.degrees(math.atan2(ay, az))
         tilt_change = abs(current_y_tilt - initial_y_tilt)
-
-        pitch, roll = get_pitch_roll_angles()
-
-        # if verbose:
-        #     print(f"Current tilt Y: {current_y_tilt:.2f}°, Initial: {initial_y_tilt:.2f}°, Δ: {tilt_change:.2f}°")
-        #    print(f"Pitch: {pitch:.2f}°, Roll: {roll:.2f}°, Y-Tilt Δ: {tilt_change:.2f}°")
-
-        alert = None
+        
         if tilt_change > TILT_ANGLE_THRESHOLD:
-            alert = f"Y Tilt Warning: ΔY tilt = {tilt_change:.2f}°"
+            over_threshold_count += 1
+            tilt_sum += tilt_change
+        else:
+            over_threshold_count = 0
+            tilt_sum = 0
+
+        if over_threshold_count >= samples:  # 30 consecutive seconds above threshold
+            avg_tilt = round(tilt_sum / samples, 2)
+
+            alert = f"Y Tilt Warning: Y tilt = {avg_tilt:.2f} deg"
             if verbose:
                 print(alert)
+            if queue:
+                message = {
+                    'sensor': 'gyroscope',
+                    'value': avg_tilt,
+                    'alert': alert
+                }
+                queue.put(message)
+            over_threshold_count = 0
+            tilt_sum = 0
 
-        if abs(gx) > GYRO_THRESHOLD:
-            gyro_alert = f"Rolling Detected: gx = {gx:.2f}°/s"
-            if verbose:
-                print(gyro_alert)
-            # Combine alerts if needed
-            alert = (alert + "; " + gyro_alert) if alert else gyro_alert
+        time.sleep(1.0)
 
-        if alert and queue:
-            message = {
-                'sensor': 'gyroscope',
-                'value': {
-                    'tilt_y': round(current_y_tilt, 2),
-                    'gx': round(gx, 2),
-                    'pitch': round(pitch, 2),
-                    'roll': round(roll, 2)
-                },
-                'alert': alert
-            }
-            queue.put(message)
-
-        time.sleep(0.1)
 
 # Test function for unit testing
 
