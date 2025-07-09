@@ -147,6 +147,7 @@ def collect_gyro_data(queue=None, verbose=False):
             tilt_change = abs(current_y_tilt - initial_y_tilt)
 
             tilt_sum += tilt_change
+            time.sleep(1)
         avg_tilt = round(tilt_sum / samples, 2)
         
         if avg_tilt > TILT_ANGLE_THRESHOLD:
