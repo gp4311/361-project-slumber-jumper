@@ -6,6 +6,7 @@
 | DAT     | GPIO 4, GPIO 27 |
 | VCC     | 3.3V            |
 | GND     | GND             |
+Multiple sensors can be connected in parallel.
 
 ## Software Setup Instructions
 
@@ -57,7 +58,7 @@ Press CTRL-X, then press Y and Enter to save the changes.
 sudo reboot
 ```
 
-#### 4. Verify Both Sensors Directories Can Be Found (Optional)
+#### 4. Verify Both Sensors Directories Can Be Found
 
 ```bash
 cd /sys/bus/w1/devices

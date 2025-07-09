@@ -67,8 +67,9 @@ def collect_temperature_data(queue=None, verbose=False):
     interval_len = 60
 
     # Set temperature thresholds
-    cold_bound = 35.0
-    hot_bound = 37.2
+    very_cold_bound = 35.0
+    cold_bound = 36.4
+    hot_bound = 37.6
     very_hot_bound = 38.9
 
     logger = CSVLogger(log_dir='logs/Temperature', field_name='Temperature (°C)')
@@ -99,7 +100,11 @@ def collect_temperature_data(queue=None, verbose=False):
             alert = None
 
             # Alert if abnormal temperature reading
-            if avg_temp <= cold_bound:
+            if avg_temp <= very_cold_bound:
+                alert = f'CRITICAL COLD WARNING: Temp {avg_temp:.2f}°C < {very_cold_bound}°C'
+                if verbose:
+                    print(alert)
+            elif avg_temp <= cold_bound:
                 alert = f'COLD WARNING: Temp {avg_temp:.2f}°C < {cold_bound}°C'
                 if verbose:
                     print(alert)
