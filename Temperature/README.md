@@ -1,9 +1,9 @@
 # Temperature Sensor Raspberry Pi Integration
 
 ## Wiring Instructions
-| DS18B20 | Raspberry Pi |
+| DS18B20 | Raspberry Pi    |
 |---------|-----------------|
-| DAT     | GPIO 4          |
+| DAT     | GPIO 4, GPIO 27 |
 | VCC     | 3.3V            |
 | GND     | GND             |
 
@@ -37,12 +37,39 @@ lsmod | grep -i w1_
 ```
 You should see some output like: `w1_therm`..., `w1_gpio`..., `wire`...
 
+### Enable Multiple 1-Wire Buses
+#### 1. Edit Config File 
+```bash
+sudo nano /boot/firmware/config.txt
+```
+
+#### 2. Add Multiple `dtoverlay` Statements & `gpiopin` Parameter to `w1-gpio` Overlay
+For example, to enable 1-Wire buses on GPIO 4 and GPIO 27:
+```bash
+dtoverlay=w1-gpio,gpiopin=4
+dtoverlay=w1-gpio,gpiopin=27
+```
+Press CTRL-X, then press Y and Enter to save the changes.
+
+#### 3. Reboot Raspberry Pi
+
+```bash
+sudo reboot
+```
+
+#### 4. Verify Both Sensors Directories Can Be Found (Optional)
+
+```bash
+cd /sys/bus/w1/devices
+```
+You should see two directories beginning with "28".
+
 ### Upload & Run the Code
 
 #### 1. Start an Editor Window
 
 ```bash
-nano temperature.py
+sudo nano temperature.py
 ```
 
 #### 2. Upload Code
